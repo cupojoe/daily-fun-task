@@ -1,0 +1,1088 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Little Leaders Daily</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Nunito', 'sans-serif'] },
+        }
+      }
+    };
+  </script>
+  <style>
+    body { font-family: 'Nunito', sans-serif; background: linear-gradient(135deg, #f0fdf4 0%, #eff6ff 100%); min-height: 100vh; }
+
+    @keyframes fadeSlideUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .card-enter { animation: fadeSlideUp 0.4s ease both; }
+    .card-enter:nth-child(2) { animation-delay: 0.08s; }
+    .card-enter:nth-child(3) { animation-delay: 0.16s; }
+
+    @media print {
+      .no-print   { display: none !important; }
+      .print-show { display: block !important; }
+      * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      body { background: white !important; }
+      .card-grid  { display: block !important; }
+      .activity-card {
+        page-break-inside: avoid;
+        break-inside: avoid;
+        margin-bottom: 1.5rem;
+        box-shadow: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useCallback } = React;
+
+    /* ─────────────────────────────────────────────
+       ACTIVITY POOL  (15 per slot, two age bands)
+    ───────────────────────────────────────────── */
+    const ACTIVITIES = [
+
+      /* ══════════════  MORNING  ══════════════ */
+      {
+        id: "mm-01", slot: "morning", ageMin: 7, ageMax: 8,
+        skill: "public-speaking",
+        title: "Mirror Magic Morning",
+        duration: "10 min",
+        whyItMatters: "Great leaders speak with confidence — and the best practice starts right here!",
+        steps: [
+          "Stand in front of a mirror and smile for 5 whole seconds.",
+          "Pick one thing you're proud of and say it out loud — twice!",
+          "Make up a superhero name for yourself and announce it dramatically.",
+          "Strike a power pose and shout: \"I am READY for today!\""
+        ],
+        bonusLevelUp: "Record a 30-second pep-talk video you can watch before something big.",
+        parentNote: "Builds vocal projection, self-affirmation, and comfort speaking in front of others."
+      },
+      {
+        id: "mm-02", slot: "morning", ageMin: 7, ageMax: 8,
+        skill: "decision-making",
+        title: "Decision Dice Dash",
+        duration: "10 min",
+        whyItMatters: "Every day is full of choices — leaders make them with confidence!",
+        steps: [
+          "Think of a small morning decision you need to make (what to wear, what to eat, etc.).",
+          "List your options and number them 1–6 (repeat if fewer options).",
+          "Roll a real die — or pick a number in your head.",
+          "Commit to that choice and tell someone one reason you're happy with it."
+        ],
+        bonusLevelUp: "Make a quick 'pros and cons' list for your dice result before you reveal the number.",
+        parentNote: "Practices commitment to decisions, positive framing, and reducing decision fatigue."
+      },
+      {
+        id: "mm-03", slot: "morning", ageMin: 7, ageMax: 8,
+        skill: "empathy",
+        title: "Kindness Forecast",
+        duration: "10 min",
+        whyItMatters: "Leaders notice the people around them and make their day a little brighter!",
+        steps: [
+          "Think of two people you'll see today.",
+          "Guess one thing each person might be feeling or worried about.",
+          "Plan one kind word or action for each of them.",
+          "Write or draw your kindness forecast in a notebook."
+        ],
+        bonusLevelUp: "At bedtime, check: did your forecast come true? What surprised you?",
+        parentNote: "Develops perspective-taking, emotional awareness, and intentional prosocial behavior."
+      },
+      {
+        id: "mm-04", slot: "morning", ageMin: 7, ageMax: 8,
+        skill: "resilience",
+        title: "Superhero Stance Sprint",
+        duration: "10 min",
+        whyItMatters: "Your body and brain are a team — a power pose gets both ready to WIN!",
+        steps: [
+          "Stand tall, hands on hips, chin up — hold it for 30 seconds.",
+          "Think of the hardest thing you might face today.",
+          "Say out loud: \"If that happens, I will try _____.\"",
+          "Do three big jumps to lock in that energy!"
+        ],
+        bonusLevelUp: "Teach the superhero stance to a family member before you leave.",
+        parentNote: "Practices mental rehearsal, resilience framing, and physical confidence anchoring."
+      },
+      {
+        id: "mm-05", slot: "morning", ageMin: 7, ageMax: 8,
+        skill: "curiosity",
+        title: "Wonder Question Wake-Up",
+        duration: "10 min",
+        whyItMatters: "The most amazing discoveries in history started with one simple question: WHY?",
+        steps: [
+          "Look around the room and pick one thing you've never really studied before.",
+          "Ask three 'why' or 'how' questions about it — write them down.",
+          "These are your wonder questions for the day. Carry them with you!",
+          "Try to find the answer to at least one by tonight."
+        ],
+        bonusLevelUp: "Share your best wonder question at dinner and see if anyone knows the answer.",
+        parentNote: "Cultivates intellectual curiosity, inquiry thinking, and the habit of follow-through on questions."
+      },
+      {
+        id: "mm-06", slot: "morning", ageMin: 9, ageMax: 10,
+        skill: "financial-literacy",
+        title: "Budget Boss Breakfast",
+        duration: "15 min",
+        whyItMatters: "Smart leaders know how to make the most of what they have!",
+        steps: [
+          "Pretend you have $5 to spend on breakfast ingredients.",
+          "Look at what's available and list three options with rough costs.",
+          "Choose the one that gives the best meal for the money.",
+          "Explain your decision to someone — what made it the best value?"
+        ],
+        bonusLevelUp: "Calculate how much you'd save in a month if you made this choice every day.",
+        parentNote: "Introduces budgeting, comparative value, and financial reasoning connected to a real context."
+      },
+      {
+        id: "mm-07", slot: "morning", ageMin: 9, ageMax: 10,
+        skill: "planning",
+        title: "Strategy Sunrise",
+        duration: "15 min",
+        whyItMatters: "Champions don't just show up — they show up with a plan!",
+        steps: [
+          "Write your top three goals for today (school, home, personal — one each).",
+          "Next to each goal, write one obstacle that might get in the way.",
+          "For each obstacle, write your if-then plan: 'If X happens, I'll do Y.'",
+          "Rank the three goals: which matters most right now?"
+        ],
+        bonusLevelUp: "At bedtime, grade yourself 1–10 on how well your plan held up.",
+        parentNote: "Practices strategic planning, obstacle anticipation, and prioritization — executive function essentials."
+      },
+      {
+        id: "mm-08", slot: "morning", ageMin: 9, ageMax: 10,
+        skill: "public-speaking",
+        title: "TED Talk in 60 Seconds",
+        duration: "15 min",
+        whyItMatters: "Being able to explain something clearly is one of the most powerful skills you can have!",
+        steps: [
+          "Pick one thing you know a lot about (a hobby, a game, an animal — anything!).",
+          "Prepare a 60-second talk: one amazing fact, one reason it matters, one thing most people don't know.",
+          "Deliver it to a mirror, a pet, or a family member — no notes allowed.",
+          "Ask for one piece of feedback and write it down."
+        ],
+        bonusLevelUp: "Film your talk and watch it back — what's one thing you'd change?",
+        parentNote: "Builds structured communication, confidence under time pressure, and graceful feedback reception."
+      },
+      {
+        id: "mm-09", slot: "morning", ageMin: 7, ageMax: 10,
+        skill: "planning",
+        title: "The 3-Thing Plan",
+        duration: "10 min",
+        whyItMatters: "Leaders know what they're aiming for even before the day begins!",
+        steps: [
+          "Write or draw three things you want to accomplish today.",
+          "Put a star next to the most important one.",
+          "Decide what you'll tackle FIRST when you get home from school.",
+          "Say your plan out loud to someone — saying it makes it real!"
+        ],
+        bonusLevelUp: "At bedtime, check off what you finished and write why you're proud.",
+        parentNote: "Develops intentional goal-setting, prioritization, and follow-through accountability."
+      },
+      {
+        id: "mm-10", slot: "morning", ageMin: 7, ageMax: 10,
+        skill: "time-management",
+        title: "Clock Captain",
+        duration: "10 min",
+        whyItMatters: "Time is the one thing you can never get back — use it like a boss!",
+        steps: [
+          "Look at the clock right now. How long until you have to leave?",
+          "List everything you still need to do before leaving.",
+          "Estimate how many minutes each thing takes.",
+          "Put them in order so you finish on time — or early!"
+        ],
+        bonusLevelUp: "Set a timer and try to beat your estimated total time.",
+        parentNote: "Introduces time estimation, task sequencing, and self-monitoring — core executive function skills."
+      },
+      {
+        id: "mm-11", slot: "morning", ageMin: 7, ageMax: 10,
+        skill: "writing",
+        title: "Headline of the Day",
+        duration: "10 min",
+        whyItMatters: "The best storytellers can turn any moment into a headline worth reading!",
+        steps: [
+          "Think about what today might bring.",
+          "Write a newspaper headline for the most exciting thing that could happen.",
+          "Write a second headline for something ordinary — but make it sound EPIC.",
+          "Add a one-sentence lead paragraph to your favorite headline."
+        ],
+        bonusLevelUp: "At the end of the day, rewrite your headline based on what actually happened.",
+        parentNote: "Builds narrative voice, creative perspective, and the habit of reflective storytelling."
+      },
+      {
+        id: "mm-12", slot: "morning", ageMin: 7, ageMax: 10,
+        skill: "resilience",
+        title: "Brave Voice Warm-Up",
+        duration: "10 min",
+        whyItMatters: "The bravest thing you can do is show up — even when it feels hard.",
+        steps: [
+          "Think of one thing today that feels a little scary or difficult.",
+          "Say this out loud: \"This is hard AND I can handle it.\"",
+          "Remember one time you did something hard and came through it.",
+          "Use that memory as your fuel for today!"
+        ],
+        bonusLevelUp: "Write your brave thing on a sticky note and put it where you'll see it all day.",
+        parentNote: "Practices resilience self-talk, drawing on past success, and growth mindset framing."
+      },
+      {
+        id: "mm-13", slot: "morning", ageMin: 7, ageMax: 10,
+        skill: "empathy",
+        title: "Mood Meter Check-In",
+        duration: "10 min",
+        whyItMatters: "Leaders pay close attention to feelings — their own and everyone else's!",
+        steps: [
+          "Rate your own mood 1–10 right now. What's one word for it?",
+          "Think of one family member or friend. How might they be feeling today?",
+          "Is there something you could do to make their day a little easier?",
+          "Do that one kind thing before you leave or as soon as you see them."
+        ],
+        bonusLevelUp: "Draw a 'mood weather forecast' for your whole family today.",
+        parentNote: "Develops emotional intelligence, empathy, and proactive relational awareness."
+      },
+      {
+        id: "mm-14", slot: "morning", ageMin: 7, ageMax: 10,
+        skill: "math-reasoning",
+        title: "Number Detective Mission",
+        duration: "10 min",
+        whyItMatters: "Math is hiding everywhere — leaders who spot it have a secret superpower!",
+        steps: [
+          "Walk around your home and find five numbers (addresses, labels, times, amounts).",
+          "Write them down and pick two. What happens if you add, subtract, or multiply them?",
+          "Write one real-life question those numbers could answer.",
+          "Solve your own question — show your work!"
+        ],
+        bonusLevelUp: "Share your number puzzle with someone at breakfast — can they solve it?",
+        parentNote: "Builds number sense and mathematical thinking anchored in real-world observation."
+      },
+      {
+        id: "mm-15", slot: "morning", ageMin: 9, ageMax: 10,
+        skill: "decision-making",
+        title: "CEO of the Morning",
+        duration: "15 min",
+        whyItMatters: "Great leaders run their morning like a CEO runs a company — with intention!",
+        steps: [
+          "Write down every decision you'll make before school (food, clothes, route, etc.).",
+          "For the two biggest ones, write out your options and pick the best one — with one reason why.",
+          "Set one personal 'company goal' for the day: something only you can achieve.",
+          "Announce your goal to a family member so they can cheer you on."
+        ],
+        bonusLevelUp: "Write a 5-word 'mission statement' for yourself today.",
+        parentNote: "Develops intentional decision-making, self-direction, and personal accountability."
+      },
+
+      /* ══════════════  AFTER-SCHOOL  ══════════════ */
+      {
+        id: "as-01", slot: "afterschool", ageMin: 7, ageMax: 8,
+        skill: "public-speaking",
+        title: "Stuffed Animal School",
+        duration: "20 min",
+        whyItMatters: "Teaching someone else is the fastest way to really know something yourself!",
+        steps: [
+          "Pick one thing you learned at school today.",
+          "Line up two or three stuffed animals or toys as your students.",
+          "Teach them what you learned — explain every step.",
+          "Ask your 'students' a question and answer it for them!"
+        ],
+        bonusLevelUp: "Make a tiny poster or a one-page worksheet for your stuffed animal class.",
+        parentNote: "Uses the protégé effect — teaching reinforces learning while building communication skills."
+      },
+      {
+        id: "as-02", slot: "afterschool", ageMin: 7, ageMax: 8,
+        skill: "reading-fluency",
+        title: "Word Detective Agency",
+        duration: "20 min",
+        whyItMatters: "The more words you know, the more powerful your thinking gets!",
+        steps: [
+          "Grab any book, magazine, or even a cereal box.",
+          "Hunt for 5 words you don't fully know.",
+          "For each one, guess the meaning from the sentence around it.",
+          "Look up at least one to check if your guess was right!"
+        ],
+        bonusLevelUp: "Use one brand-new word in a real sentence before bedtime tonight.",
+        parentNote: "Builds vocabulary through context inference — a key reading comprehension strategy."
+      },
+      {
+        id: "as-03", slot: "afterschool", ageMin: 7, ageMax: 8,
+        skill: "writing",
+        title: "Story Spine Showdown",
+        duration: "25 min",
+        whyItMatters: "Every great story ever told follows a pattern — now you know the secret!",
+        steps: [
+          "Write one sentence for each of these: Once upon a time… / Every day… / Until one day… / Because of that… / Until finally…",
+          "Read your 5-sentence story out loud — does it sound like a real story?",
+          "Give your story a title and draw the best scene from it."
+        ],
+        bonusLevelUp: "Write a second Story Spine where the main character is YOU.",
+        parentNote: "Teaches narrative structure — a foundational writing skill used across all genres."
+      },
+      {
+        id: "as-04", slot: "afterschool", ageMin: 7, ageMax: 8,
+        skill: "math-reasoning",
+        title: "Fraction Pizza Parlor",
+        duration: "20 min",
+        whyItMatters: "Fractions are everywhere — pizzas, time, money, and more!",
+        steps: [
+          "Draw a large circle — this is your pizza.",
+          "Divide it into 8 slices and 'add' 3 different toppings to different sections.",
+          "Write a fraction for how much of the pizza each topping covers.",
+          "Which topping covers the most? Write: ___ is bigger than ___."
+        ],
+        bonusLevelUp: "Order all your toppings from most to least coverage and list their fractions in order.",
+        parentNote: "Visualises fractions through a real-world context, supporting early number sense development."
+      },
+      {
+        id: "as-05", slot: "afterschool", ageMin: 7, ageMax: 8,
+        skill: "problem-solving",
+        title: "Fix-It Explorer",
+        duration: "25 min",
+        whyItMatters: "Problem-solvers see the world as full of things just waiting to be improved!",
+        steps: [
+          "Walk through one room and find something that's slightly broken, messy, or annoying.",
+          "Describe the problem in one sentence.",
+          "Think of three possible fixes — including at least one silly one.",
+          "Try the simplest fix and report back on whether it worked!"
+        ],
+        bonusLevelUp: "Sketch an invention that would prevent this problem from ever happening again.",
+        parentNote: "Applies design-thinking: problem identification, ideation, and low-fidelity testing."
+      },
+      {
+        id: "as-06", slot: "afterschool", ageMin: 7, ageMax: 8,
+        skill: "financial-literacy",
+        title: "Coin Counter Challenge",
+        duration: "20 min",
+        whyItMatters: "Understanding money is a superpower that stays with you your entire life!",
+        steps: [
+          "Find some spare coins around the house (or draw pretend ones on paper).",
+          "Sort them by type and count the total.",
+          "Think of something you'd like to save for. How many days would it take?",
+          "Draw a simple savings chart showing your goal at the top."
+        ],
+        bonusLevelUp: "Add up the same coins in a different order — do you get the same total?",
+        parentNote: "Introduces coin recognition, addition, and early saving and goal-setting concepts."
+      },
+      {
+        id: "as-07", slot: "afterschool", ageMin: 9, ageMax: 10,
+        skill: "empathy",
+        title: "The Empathy Interview",
+        duration: "30 min",
+        whyItMatters: "The best leaders listen deeply before they lead — and they keep listening!",
+        steps: [
+          "Interview a family member or trusted adult about a challenge they've faced.",
+          "Ask: 'What happened? How did you feel? What helped you get through it?'",
+          "Write down two things you learned about their experience.",
+          "Write one thing you'd do differently in your own life after hearing their story."
+        ],
+        bonusLevelUp: "Write them a short thank-you note mentioning one specific thing their story taught you.",
+        parentNote: "Develops active listening, deep empathy, and the habit of learning from others' lived experience."
+      },
+      {
+        id: "as-08", slot: "afterschool", ageMin: 9, ageMax: 10,
+        skill: "time-management",
+        title: "Time Auction",
+        duration: "25 min",
+        whyItMatters: "How you spend your time tells the world what you value most!",
+        steps: [
+          "You have about 3 hours after school. Draw a pie chart dividing it up.",
+          "Label each slice: homework, play, eating, screen time, chores, creative stuff, etc.",
+          "Is that the afternoon you actually want? Redraw it as your ideal version.",
+          "Track your real time today and compare it to your plan at bedtime."
+        ],
+        bonusLevelUp: "Calculate what percentage of your waking hours this week went toward learning something new.",
+        parentNote: "Teaches time estimation, reflection on priorities, and the discipline of intentional scheduling."
+      },
+      {
+        id: "as-09", slot: "afterschool", ageMin: 9, ageMax: 10,
+        skill: "decision-making",
+        title: "Debate Club: Solo Edition",
+        duration: "30 min",
+        whyItMatters: "Great thinkers can argue both sides — even the side they disagree with!",
+        steps: [
+          "Pick any topic you have an opinion about.",
+          "Spend 5 minutes writing the strongest arguments FOR your position.",
+          "Spend 5 minutes writing the best arguments AGAINST it — pretend you're someone who disagrees.",
+          "Read both sides. Did anything shift your thinking, even a tiny bit?"
+        ],
+        bonusLevelUp: "Present both sides to a family member and have a mini debate.",
+        parentNote: "Builds critical thinking, perspective flexibility, and intellectual honesty."
+      },
+      {
+        id: "as-10", slot: "afterschool", ageMin: 9, ageMax: 10,
+        skill: "math-reasoning",
+        title: "Math Story Inventor",
+        duration: "25 min",
+        whyItMatters: "Math is everywhere — once you start seeing it, you can never stop!",
+        steps: [
+          "Pick any real-life scenario (a shopping trip, a sports game, a birthday party).",
+          "Write three math word problems set inside your scenario.",
+          "Solve each one — show your work for all of them.",
+          "Make one problem extra tricky and challenge a family member to solve it."
+        ],
+        bonusLevelUp: "Create a full answer key with step-by-step explanations.",
+        parentNote: "Reinforces math through creative application, deepening conceptual understanding."
+      },
+      {
+        id: "as-11", slot: "afterschool", ageMin: 7, ageMax: 10,
+        skill: "resilience",
+        title: "Resilience Reframe",
+        duration: "20 min",
+        whyItMatters: "The story you tell about hard things changes how much you grow from them!",
+        steps: [
+          "Think of one thing that went wrong or felt hard today.",
+          "Write it as-is: 'Today _____ happened and I felt _____.'",
+          "Rewrite it starting with: 'Today I learned that _____.'",
+          "Write one thing you'd do differently — or the same — next time."
+        ],
+        bonusLevelUp: "Draw a 'before and after' picture showing your mindset shift.",
+        parentNote: "Teaches cognitive reframing — a research-backed core resilience and growth-mindset skill."
+      },
+      {
+        id: "as-12", slot: "afterschool", ageMin: 7, ageMax: 10,
+        skill: "curiosity",
+        title: "Curiosity Lab",
+        duration: "25 min",
+        whyItMatters: "Scientists ask one question, test it, and sometimes change the world. You can too!",
+        steps: [
+          "Ask one question about something in your home, yard, or neighborhood.",
+          "Make a prediction: 'I think _____ because _____.'",
+          "Design a mini investigation or experiment to test it.",
+          "Write what you found — did it match your prediction?"
+        ],
+        bonusLevelUp: "Share your experiment with someone and teach them what you discovered.",
+        parentNote: "Introduces the scientific method: question, hypothesis, experiment, and conclusion."
+      },
+      {
+        id: "as-13", slot: "afterschool", ageMin: 7, ageMax: 10,
+        skill: "problem-solving",
+        title: "Problem-Solver's Workshop",
+        duration: "20 min",
+        whyItMatters: "Every problem is just a puzzle waiting for the right thinker!",
+        steps: [
+          "Pick a small, real problem you or your family faces regularly.",
+          "Write down three possible solutions — no matter how wild.",
+          "Pick the best one and list the steps to actually make it happen.",
+          "Try it out this week or make a specific plan to do so."
+        ],
+        bonusLevelUp: "Build a simple prototype or draw a detailed blueprint of your solution.",
+        parentNote: "Applies structured problem-solving and creative ideation to real-world contexts."
+      },
+      {
+        id: "as-14", slot: "afterschool", ageMin: 7, ageMax: 10,
+        skill: "reading-fluency",
+        title: "Reading Rally",
+        duration: "20 min",
+        whyItMatters: "Fast, fluent readers understand more, learn faster, and read for pleasure longer!",
+        steps: [
+          "Choose a book or article you find interesting.",
+          "Read one page out loud to yourself — pay attention to every punctuation mark.",
+          "Without looking, summarize what you read in two sentences.",
+          "Read the next page and predict out loud what happens next."
+        ],
+        bonusLevelUp: "Record yourself reading and listen back — where could you add more expression?",
+        parentNote: "Builds reading fluency, comprehension, and metacognitive monitoring."
+      },
+      {
+        id: "as-15", slot: "afterschool", ageMin: 7, ageMax: 10,
+        skill: "writing",
+        title: "Letter to My Future Self",
+        duration: "25 min",
+        whyItMatters: "Writing to your future self is one of the coolest things a person can do!",
+        steps: [
+          "Start with: 'Dear Future Me, right now I am _____ years old and…'",
+          "Write 3 things you love, 2 things you're working on, 1 big dream you have.",
+          "Ask your future self one question you hope they can answer.",
+          "Seal it in an envelope, date it, and hide it somewhere to open in 6 months!"
+        ],
+        bonusLevelUp: "Add a drawing of yourself today so your future self remembers exactly how you looked.",
+        parentNote: "Develops reflective writing, self-awareness, and long-term perspective-taking."
+      },
+
+      /* ══════════════  BEDTIME  ══════════════ */
+      {
+        id: "bt-01", slot: "bedtime", ageMin: 7, ageMax: 8,
+        skill: "resilience",
+        title: "Brave Moment Badge",
+        duration: "8 min",
+        whyItMatters: "Noticing your own bravery today helps you be braver tomorrow!",
+        steps: [
+          "Think of one thing today that felt hard or a little scary.",
+          "Draw a badge for yourself because you showed up for it.",
+          "Give your badge a name — 'The Tried-Anyway Medal' or anything you like!",
+          "Put it where you'll see it first thing in the morning."
+        ],
+        bonusLevelUp: "Tell someone about your brave moment before you turn out the light.",
+        parentNote: "Reinforces a resilience identity — children who see themselves as brave tend to act that way."
+      },
+      {
+        id: "bt-02", slot: "bedtime", ageMin: 7, ageMax: 8,
+        skill: "empathy",
+        title: "Gratitude Star Map",
+        duration: "8 min",
+        whyItMatters: "Grateful leaders notice the helpers and heroes all around them!",
+        steps: [
+          "Draw 5 stars on a page.",
+          "In each star, write or draw one person who helped you today — even in a tiny way.",
+          "Pick one star and write one thing you could do to thank that person.",
+          "Fall asleep thinking kind thoughts about every one of those people."
+        ],
+        bonusLevelUp: "Tomorrow, actually do that one thank-you thing for the person you starred.",
+        parentNote: "Cultivates gratitude, recognition of others' contributions, and relationship awareness."
+      },
+      {
+        id: "bt-03", slot: "bedtime", ageMin: 7, ageMax: 8,
+        skill: "planning",
+        title: "Dream Team Planner",
+        duration: "8 min",
+        whyItMatters: "Even your biggest dreams can be planned — and planning makes them come true!",
+        steps: [
+          "Write or draw one big thing you want to do someday.",
+          "Write: 'To do this, I'll need to learn _____.'",
+          "Write: 'One tiny step I could take this week is _____.'",
+          "Close your eyes and picture yourself doing it — feel the awesome!"
+        ],
+        bonusLevelUp: "Find one real person who does that thing and learn one fact about their journey.",
+        parentNote: "Links imagination to concrete planning — the foundation of long-term goal-setting."
+      },
+      {
+        id: "bt-04", slot: "bedtime", ageMin: 7, ageMax: 8,
+        skill: "reading-fluency",
+        title: "Story Stretcher",
+        duration: "10 min",
+        whyItMatters: "Your imagination is the best sequel machine in the entire world!",
+        steps: [
+          "Read 1–2 pages of any book (or have someone read to you).",
+          "Stop before finding out what happens next.",
+          "Invent your own next page — what do YOU think will happen?",
+          "Tomorrow, read the real next page and compare it to your version."
+        ],
+        bonusLevelUp: "Write your version of the next chapter instead of just imagining it.",
+        parentNote: "Builds prediction, inferencing, and reading engagement through creative extension."
+      },
+      {
+        id: "bt-05", slot: "bedtime", ageMin: 9, ageMax: 10,
+        skill: "planning",
+        title: "Tomorrow's Compass",
+        duration: "10 min",
+        whyItMatters: "The best leaders end every day with a plan for the next one!",
+        steps: [
+          "Write your single most important goal for tomorrow.",
+          "Write one obstacle that might get in the way.",
+          "Write your if-then plan: 'If ____ happens, I'll ____.'",
+          "Rate today 1–10 and write one word for how you'll make tomorrow even better."
+        ],
+        bonusLevelUp: "Write a one-sentence 'mission statement' for tomorrow — make it genuinely inspiring.",
+        parentNote: "Builds executive function: goal-setting, obstacle planning, and daily self-reflection."
+      },
+      {
+        id: "bt-06", slot: "bedtime", ageMin: 9, ageMax: 10,
+        skill: "problem-solving",
+        title: "Problem-Solver's Diary",
+        duration: "10 min",
+        whyItMatters: "Leaders who document their thinking get better at thinking faster!",
+        steps: [
+          "Write about one problem you saw or experienced today.",
+          "List three different solutions — wild ideas welcome.",
+          "Pick the best solution and explain in two sentences why it's best.",
+          "Describe how you'd know if it was actually working."
+        ],
+        bonusLevelUp: "Sketch a blueprint showing exactly how your solution would work.",
+        parentNote: "Applies structured problem-solving and design-thinking evaluation as a bedtime habit."
+      },
+      {
+        id: "bt-07", slot: "bedtime", ageMin: 9, ageMax: 10,
+        skill: "writing",
+        title: "Leadership Letter",
+        duration: "10 min",
+        whyItMatters: "Powerful leaders share what they learn — that's how they make the world better!",
+        steps: [
+          "Think of someone younger who looks up to you.",
+          "Write them a short letter about something important you've learned this week.",
+          "Include one piece of advice you wish someone had given you earlier.",
+          "Sign it with your 'leader name.'"
+        ],
+        bonusLevelUp: "Actually give the letter to that person — or save it to give them someday.",
+        parentNote: "Develops reflective writing, mentorship thinking, and the skill of articulating learned wisdom."
+      },
+      {
+        id: "bt-08", slot: "bedtime", ageMin: 9, ageMax: 10,
+        skill: "decision-making",
+        title: "Decision Replay",
+        duration: "10 min",
+        whyItMatters: "Reviewing your choices is how good decision-makers become great ones!",
+        steps: [
+          "Pick the most important decision you made today.",
+          "Write: what were your options, what did you choose, and why?",
+          "Write: if you could go back, would you choose the same? Why or why not?",
+          "Write: what will you look for next time you face a similar decision?"
+        ],
+        bonusLevelUp: "Create a personal decision-making checklist you can pull up any time.",
+        parentNote: "Develops metacognition around decision-making and self-directed, evidence-based improvement."
+      },
+      {
+        id: "bt-09", slot: "bedtime", ageMin: 7, ageMax: 10,
+        skill: "curiosity",
+        title: "3-2-1 Launch Log",
+        duration: "8 min",
+        whyItMatters: "Great thinkers keep track of what amazes them — that's where ideas are born!",
+        steps: [
+          "Write 3 things you noticed today (big or tiny — anything counts).",
+          "Write 2 things you wondered about.",
+          "Write 1 question you want to find the answer to tomorrow.",
+          "Put a star next to your favorite item in each list."
+        ],
+        bonusLevelUp: "Try to look up the answer to your starred question before turning off the light.",
+        parentNote: "Fosters curiosity, metacognition, and self-directed inquiry as a daily habit."
+      },
+      {
+        id: "bt-10", slot: "bedtime", ageMin: 7, ageMax: 10,
+        skill: "empathy",
+        title: "Gratitude Acrostic",
+        duration: "10 min",
+        whyItMatters: "Showing people they matter is one of the most powerful things a leader does!",
+        steps: [
+          "Think of someone you're grateful for today.",
+          "Write their name vertically down the page — one letter per line.",
+          "For each letter, write something you appreciate about them.",
+          "Read it quietly to yourself before you sleep."
+        ],
+        bonusLevelUp: "Leave the acrostic somewhere they'll find it in the morning — no explanation needed.",
+        parentNote: "Strengthens gratitude practice, vocabulary, and relationship-building through writing."
+      },
+      {
+        id: "bt-11", slot: "bedtime", ageMin: 7, ageMax: 10,
+        skill: "resilience",
+        title: "3 Wins + 1 Brave Thing",
+        duration: "8 min",
+        whyItMatters: "Leaders end the day counting what went RIGHT and what took courage!",
+        steps: [
+          "Write or say 3 things that went well today — any size counts.",
+          "Write or say 1 thing that took courage — even if it didn't go perfectly.",
+          "Read them all and say: 'I showed up today, and I'm proud of that.'",
+          "Take three slow, deep breaths and let the day go."
+        ],
+        bonusLevelUp: "Keep your list all week — notice if your wins start getting bigger.",
+        parentNote: "A research-backed gratitude and resilience practice adapted for children."
+      },
+      {
+        id: "bt-12", slot: "bedtime", ageMin: 7, ageMax: 10,
+        skill: "time-management",
+        title: "Sleep Countdown Planner",
+        duration: "8 min",
+        whyItMatters: "Leaders who sleep well think better — sleep is a real, actual superpower!",
+        steps: [
+          "Write down what time you need to wake up tomorrow.",
+          "Count back 9 hours — that's your ideal bedtime.",
+          "List three things you need to do before sleeping (teeth, PJs, backpack check, etc.).",
+          "Put them in order and time yourself. See if you can beat your record tomorrow!"
+        ],
+        bonusLevelUp: "Track your bedtime every night this week — are you hitting your target?",
+        parentNote: "Teaches backwards planning, self-care routines, and the science of sleep for performance."
+      },
+      {
+        id: "bt-13", slot: "bedtime", ageMin: 7, ageMax: 10,
+        skill: "writing",
+        title: "Micro Memoir Minute",
+        duration: "10 min",
+        whyItMatters: "Your life is full of stories worth telling — it's time to start keeping them!",
+        steps: [
+          "Pick the one moment from today that stands out most.",
+          "Write about it in exactly 5 sentences — not 4, not 6.",
+          "Include: where you were, what happened, how you felt, what you thought, and why it mattered.",
+          "Give your 5-sentence story a title."
+        ],
+        bonusLevelUp: "Keep these for a month and you'll have your very own mini memoir.",
+        parentNote: "Builds concise writing, narrative structure, and daily reflective self-expression."
+      },
+      {
+        id: "bt-14", slot: "bedtime", ageMin: 7, ageMax: 10,
+        skill: "financial-literacy",
+        title: "Dream Savings Plan",
+        duration: "8 min",
+        whyItMatters: "Every big dream starts with a small savings plan — your future self will seriously thank you!",
+        steps: [
+          "Pick one thing you'd love to own or experience someday.",
+          "Look it up or estimate how much it costs.",
+          "If you saved $2 per week, how many weeks would it take?",
+          "Draw a 'savings thermometer' with the goal at the very top."
+        ],
+        bonusLevelUp: "Research one way kids your age can earn extra money and decide if you'd try it.",
+        parentNote: "Introduces goal-driven saving, simple division, and the power of delayed gratification."
+      },
+      {
+        id: "bt-15", slot: "bedtime", ageMin: 7, ageMax: 10,
+        skill: "math-reasoning",
+        title: "Number Story of the Day",
+        duration: "8 min",
+        whyItMatters: "Numbers are hiding in every single day — leaders who spot them have an edge!",
+        steps: [
+          "Think back over your day. Find 3 real numbers from it (times, amounts, distances, scores).",
+          "Write one math question using any two of those numbers.",
+          "Solve it! Then make it harder by adding the third number.",
+          "Write: 'Today's most interesting number was ___ because ___.' "
+        ],
+        bonusLevelUp: "Share your math question at breakfast tomorrow — can anyone solve it?",
+        parentNote: "Builds number sense and mathematical thinking connected to real everyday experiences."
+      },
+    ];
+
+    /* ─────────────────────────────────────────────
+       SEEDED PRNG  (Mulberry32 — no deps needed)
+    ───────────────────────────────────────────── */
+    function mulberry32(seed) {
+      return function () {
+        seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
+        let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      };
+    }
+
+    function dateToSeed() {
+      const d = new Date();
+      return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+    }
+
+    function seededShuffle(arr, rand) {
+      const a = [...arr];
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(rand() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+
+    function pickActivities(age, shuffleCount) {
+      const seed = dateToSeed() + shuffleCount * 999983;
+      const rand = mulberry32(seed);
+      return ['morning', 'afterschool', 'bedtime'].map(slot => {
+        const pool = ACTIVITIES.filter(a => a.slot === slot && age >= a.ageMin && age <= a.ageMax);
+        return seededShuffle(pool, rand)[0] || null;
+      });
+    }
+
+    /* ─────────────────────────────────────────────
+       STREAK  (localStorage)
+    ───────────────────────────────────────────── */
+    const STREAK_KEY = 'lld_streak_v1';
+
+    function todayStr() { return new Date().toISOString().slice(0, 10); }
+    function yesterdayStr() { return new Date(Date.now() - 86400000).toISOString().slice(0, 10); }
+
+    function loadStreak() {
+      try {
+        const raw = localStorage.getItem(STREAK_KEY);
+        if (!raw) return { lastDate: null, current: 0, longest: 0, doneToday: [] };
+        const d = JSON.parse(raw);
+        const today = todayStr(), yesterday = yesterdayStr();
+        if (d.lastDate !== today && d.lastDate !== yesterday) { d.current = 0; d.doneToday = []; }
+        else if (d.lastDate === yesterday) { d.doneToday = []; }
+        return d;
+      } catch { return { lastDate: null, current: 0, longest: 0, doneToday: [] }; }
+    }
+
+    function saveStreak(d) {
+      try { localStorage.setItem(STREAK_KEY, JSON.stringify(d)); } catch {}
+    }
+
+    /* ─────────────────────────────────────────────
+       SLOT CONFIG
+    ───────────────────────────────────────────── */
+    const SLOTS = ['morning', 'afterschool', 'bedtime'];
+    const SLOT_CFG = {
+      morning:     { label: 'Morning Mission',       emoji: '☀️',  bg: '#FFF7ED', border: '#FB923C', icon: '#F97316', badge: '#FFEDD5' },
+      afterschool: { label: 'After-School Quest',    emoji: '🎒',  bg: '#EFF6FF', border: '#60A5FA', icon: '#3B82F6', badge: '#DBEAFE' },
+      bedtime:     { label: 'Before-Bed Reflection', emoji: '🌙',  bg: '#F5F3FF', border: '#A78BFA', icon: '#7C3AED', badge: '#EDE9FE' },
+    };
+
+    /* ─────────────────────────────────────────────
+       COMPONENTS
+    ───────────────────────────────────────────── */
+    function SkillBadge({ skill, note, show }) {
+      if (!show) return null;
+      return (
+        <div style={{ background: '#f0fdf4', border: '1px solid #86efac', borderRadius: '1rem' }} className="mt-3 p-3 text-sm">
+          <span className="font-bold text-green-700">👓 Skill: </span>
+          <span className="text-green-800 font-semibold capitalize">{skill.replace(/-/g, ' ')}</span>
+          <p className="text-green-700 mt-1">{note}</p>
+        </div>
+      );
+    }
+
+    function DoneButton({ slot, done, onDone }) {
+      const colors = {
+        morning:     ['#FB923C', '#FDE68A', '#fff'],
+        afterschool: ['#60A5FA', '#BAE6FD', '#fff'],
+        bedtime:     ['#A78BFA', '#DDD6FE', '#fff'],
+      };
+      const fire = () => {
+        if (done) return;
+        confetti({ particleCount: 110, spread: 80, origin: { y: 0.7 }, colors: colors[slot] });
+        onDone();
+      };
+      return (
+        <button
+          onClick={fire}
+          disabled={done}
+          className="no-print mt-4 w-full py-3 rounded-full font-black text-base transition-all duration-200"
+          style={{
+            background: done ? '#d1fae5' : '#10B981',
+            color: done ? '#065f46' : '#fff',
+            cursor: done ? 'default' : 'pointer',
+            transform: 'scale(1)',
+            boxShadow: done ? 'none' : '0 4px 14px rgba(16,185,129,0.35)',
+          }}
+          onMouseEnter={e => { if (!done) e.currentTarget.style.transform = 'scale(1.03)'; }}
+          onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}
+        >
+          {done ? '✅ Mission Complete! Amazing job!' : '🎉 I did it!'}
+        </button>
+      );
+    }
+
+    function ActivityCard({ activity, slot, showNote, done, onDone, print }) {
+      const c = SLOT_CFG[slot];
+      if (!activity) return (
+        <div style={{ background: c.bg, border: `2px solid ${c.border}`, borderRadius: '1.5rem' }} className="p-6 text-center text-gray-400">
+          No activity found — try a different age!
+        </div>
+      );
+      return (
+        <div
+          className="activity-card card-enter"
+          style={{ background: c.bg, border: `2px solid ${c.border}`, borderRadius: '1.5rem', overflow: 'hidden', boxShadow: '0 8px 30px rgba(0,0,0,0.08)', transition: 'box-shadow 0.2s' }}
+          onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 12px 40px rgba(0,0,0,0.14)'; }}
+          onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 8px 30px rgba(0,0,0,0.08)'; }}
+        >
+          {/* Header */}
+          <div style={{ borderBottom: `1px solid ${c.border}44`, padding: '1.5rem 1.5rem 1rem' }}>
+            <div className="flex items-center gap-2 mb-1">
+              <span style={{ fontSize: '1.4rem' }}>{c.emoji}</span>
+              <span style={{ color: c.icon, fontSize: '0.7rem', fontWeight: 900, letterSpacing: '0.1em', textTransform: 'uppercase' }}>{c.label}</span>
+              <span style={{ marginLeft: 'auto', background: c.badge, color: c.icon, fontSize: '0.75rem', fontWeight: 700, padding: '2px 10px', borderRadius: '999px' }}>
+                ⏱ {activity.duration}
+              </span>
+            </div>
+            <h2 style={{ fontSize: '1.5rem', fontWeight: 900, color: '#111827', marginTop: '0.4rem', lineHeight: 1.2 }}>{activity.title}</h2>
+            <p style={{ color: c.icon, fontWeight: 700, fontSize: '0.9rem', marginTop: '0.35rem' }}>{activity.whyItMatters}</p>
+          </div>
+
+          {/* Body */}
+          <div style={{ padding: '1rem 1.5rem 1.5rem' }}>
+            <p style={{ color: c.icon, fontSize: '0.7rem', fontWeight: 900, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '0.75rem' }}>How to do it:</p>
+            <ol style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+              {activity.steps.map((step, i) => (
+                <li key={i} style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}>
+                  <span style={{
+                    flexShrink: 0, width: '1.75rem', height: '1.75rem', borderRadius: '999px',
+                    background: c.badge, color: c.icon, fontWeight: 900, fontSize: '0.85rem',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center'
+                  }}>{i + 1}</span>
+                  <span style={{ fontSize: '0.9rem', color: '#374151', paddingTop: '0.1rem' }}>{step}</span>
+                </li>
+              ))}
+            </ol>
+
+            {activity.bonusLevelUp && (
+              <div style={{ marginTop: '1rem', padding: '0.75rem 1rem', borderRadius: '1rem', background: c.badge, display: 'flex', gap: '0.6rem', alignItems: 'flex-start' }}>
+                <span style={{ fontSize: '1.1rem', flexShrink: 0 }}>⚡</span>
+                <div>
+                  <span style={{ color: c.icon, fontSize: '0.7rem', fontWeight: 900, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Bonus Level-Up: </span>
+                  <span style={{ fontSize: '0.88rem', color: '#374151' }}>{activity.bonusLevelUp}</span>
+                </div>
+              </div>
+            )}
+
+            <SkillBadge skill={activity.skill} note={activity.parentNote} show={showNote} />
+            {!print && <DoneButton slot={slot} done={done} onDone={onDone} />}
+          </div>
+        </div>
+      );
+    }
+
+    /* ─────────────────────────────────────────────
+       APP
+    ───────────────────────────────────────────── */
+    function App() {
+      const [age, setAge]               = useState(8);
+      const [name, setName]             = useState('');
+      const [shuffleCount, setShuffle]  = useState(0);
+      const [generated, setGenerated]   = useState(false);
+      const [cards, setCards]           = useState([null, null, null]);
+      const [showNote, setShowNote]     = useState(false);
+      const [done, setDone]             = useState({ morning: false, afterschool: false, bedtime: false });
+      const [streak, setStreak]         = useState(() => loadStreak());
+
+      const generate = useCallback((a, sc) => {
+        setCards(pickActivities(a, sc));
+        setGenerated(true);
+        setDone({ morning: false, afterschool: false, bedtime: false });
+      }, []);
+
+      const handleGenerate = () => generate(age, shuffleCount);
+      const handleShuffle = () => { const sc = shuffleCount + 1; setShuffle(sc); generate(age, sc); };
+      const handleAge = (a) => { setAge(a); if (generated) generate(a, shuffleCount); };
+
+      const handleDone = (slot) => {
+        const next = { ...done, [slot]: true };
+        setDone(next);
+        if (SLOTS.every(s => next[s])) {
+          setStreak(prev => {
+            const today = todayStr(), yest = yesterdayStr();
+            const newCurrent = prev.lastDate === yest ? prev.current + 1 : (prev.lastDate === today ? prev.current : 1);
+            const updated = { ...prev, lastDate: today, current: newCurrent, longest: Math.max(prev.longest, newCurrent), doneToday: SLOTS };
+            saveStreak(updated);
+            return updated;
+          });
+        }
+      };
+
+      const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+
+      return (
+        <div style={{ minHeight: '100vh', paddingBottom: '5rem' }}>
+
+          {/* ── Print header (screen: hidden) ── */}
+          <div className="print-show" style={{ display: 'none', textAlign: 'center', padding: '2rem 1rem 1rem', borderBottom: '2px solid #e5e7eb', marginBottom: '1.5rem' }}>
+            <h1 style={{ fontSize: '2rem', fontWeight: 900 }}>🌟 Little Leaders Daily 🌟</h1>
+            <p style={{ fontSize: '1.25rem', fontWeight: 700, marginTop: '0.25rem' }}>
+              {name ? `${name}'s Adventure` : "Today's Adventure"}
+            </p>
+            <p style={{ color: '#6b7280', marginTop: '0.25rem' }}>{today} · Age {age}</p>
+          </div>
+
+          {/* ── Header ── */}
+          <header className="no-print" style={{ textAlign: 'center', padding: '2.5rem 1rem 1.5rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
+              <span style={{ fontSize: '2.5rem' }}>🌟</span>
+              <h1 style={{ fontSize: 'clamp(1.75rem, 5vw, 3rem)', fontWeight: 900, color: '#111827', lineHeight: 1.1 }}>Little Leaders Daily</h1>
+              <span style={{ fontSize: '2.5rem' }}>🌟</span>
+            </div>
+            <p style={{ color: '#6b7280', fontSize: '1.1rem', fontWeight: 600 }}>
+              {name ? `${name}'s adventure awaits!` : 'Your daily adventure awaits!'}
+            </p>
+            {streak.current >= 2 && (
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.75rem', padding: '0.4rem 1rem', borderRadius: '999px', background: '#FFF7ED', border: '2px solid #FB923C', color: '#c2410c', fontWeight: 700, fontSize: '0.9rem' }}>
+                🔥 {streak.current}-day streak! Keep the fire going!
+              </div>
+            )}
+          </header>
+
+          {/* ── Input Panel ── */}
+          <div className="no-print" style={{ maxWidth: '640px', margin: '0 auto', padding: '0 1rem 2rem' }}>
+            <div style={{ background: 'white', borderRadius: '1.5rem', boxShadow: '0 8px 30px rgba(0,0,0,0.08)', padding: '1.5rem' }}>
+              {/* Name */}
+              <div style={{ marginBottom: '1.25rem' }}>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, color: '#4b5563', marginBottom: '0.5rem' }}>👤 What's your name? <span style={{ fontWeight: 400, color: '#9ca3af' }}>(optional)</span></label>
+                <input
+                  type="text" value={name} onChange={e => setName(e.target.value)}
+                  placeholder="Enter your name…"
+                  style={{ width: '100%', boxSizing: 'border-box', padding: '0.75rem 1rem', borderRadius: '1rem', border: '2px solid #e5e7eb', outline: 'none', fontSize: '1rem', fontFamily: 'inherit', fontWeight: 600, transition: 'border-color 0.15s' }}
+                  onFocus={e => { e.target.style.borderColor = '#10B981'; }}
+                  onBlur={e => { e.target.style.borderColor = '#e5e7eb'; }}
+                />
+              </div>
+              {/* Age */}
+              <div style={{ marginBottom: '1.25rem' }}>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, color: '#4b5563', marginBottom: '0.5rem' }}>🎂 How old are you?</label>
+                <div style={{ display: 'flex', gap: '0.6rem' }}>
+                  {[7, 8, 9, 10].map(a => (
+                    <button
+                      key={a} onClick={() => handleAge(a)}
+                      style={{
+                        flex: 1, padding: '0.75rem', borderRadius: '999px', fontWeight: 900, fontSize: '1.1rem',
+                        border: age === a ? '2px solid #059669' : '2px solid transparent',
+                        background: age === a ? '#10B981' : '#f3f4f6',
+                        color: age === a ? '#fff' : '#374151',
+                        cursor: 'pointer', transition: 'all 0.15s', fontFamily: 'inherit',
+                      }}
+                      onMouseEnter={e => { if (age !== a) e.currentTarget.style.background = '#e5e7eb'; }}
+                      onMouseLeave={e => { if (age !== a) e.currentTarget.style.background = '#f3f4f6'; }}
+                    >{a}</button>
+                  ))}
+                </div>
+              </div>
+              {/* Generate + Shuffle */}
+              <div style={{ display: 'flex', gap: '0.6rem', marginBottom: '0.75rem' }}>
+                <button
+                  onClick={handleGenerate}
+                  style={{ flex: 1, padding: '1rem', borderRadius: '999px', fontWeight: 900, fontSize: '1rem', background: '#10B981', color: '#fff', border: 'none', cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 4px 14px rgba(16,185,129,0.4)', transition: 'transform 0.15s, box-shadow 0.15s' }}
+                  onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.03)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(16,185,129,0.5)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 4px 14px rgba(16,185,129,0.4)'; }}
+                >
+                  🚀 Generate today's adventure!
+                </button>
+                <button
+                  onClick={handleShuffle} title="Shuffle activities"
+                  style={{ padding: '1rem 1.2rem', borderRadius: '999px', fontWeight: 900, fontSize: '1.3rem', background: '#f3f4f6', border: '2px solid #e5e7eb', cursor: 'pointer', transition: 'transform 0.15s' }}
+                  onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.1)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}
+                >🔀</button>
+              </div>
+              {/* Parent note toggle */}
+              <button
+                onClick={() => setShowNote(n => !n)}
+                style={{ width: '100%', padding: '0.6rem', borderRadius: '999px', fontSize: '0.85rem', fontWeight: 700, fontFamily: 'inherit', cursor: 'pointer', transition: 'all 0.15s', background: showNote ? '#d1fae5' : '#f9fafb', color: showNote ? '#065f46' : '#6b7280', border: `1px solid ${showNote ? '#6ee7b7' : '#e5e7eb'}` }}
+              >
+                {showNote ? '👓 Hide parent notes' : '👓 Show parent notes (for grown-ups)'}
+              </button>
+            </div>
+          </div>
+
+          {/* ── Empty state ── */}
+          {!generated && (
+            <div className="no-print" style={{ textAlign: 'center', padding: '3rem 1rem' }}>
+              <div style={{ fontSize: '5rem', marginBottom: '1rem' }}>🧭</div>
+              <p style={{ fontSize: '1.5rem', fontWeight: 900, color: '#374151', marginBottom: '0.5rem' }}>Ready for your adventure?</p>
+              <p style={{ color: '#9ca3af', fontWeight: 600 }}>Pick your age above and hit the button to get started!</p>
+            </div>
+          )}
+
+          {/* ── Cards ── */}
+          {generated && (
+            <div className="card-grid" style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 1rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem' }}>
+              {SLOTS.map((slot, i) => (
+                <ActivityCard key={slot} activity={cards[i]} slot={slot} showNote={showNote} done={done[slot]} onDone={() => handleDone(slot)} print={false} />
+              ))}
+            </div>
+          )}
+
+          {/* ── Print button ── */}
+          {generated && (
+            <div className="no-print" style={{ textAlign: 'center', marginTop: '2rem' }}>
+              <button
+                onClick={() => window.print()}
+                style={{ padding: '0.75rem 1.5rem', borderRadius: '999px', fontWeight: 700, fontSize: '0.9rem', background: 'white', color: '#6b7280', border: '2px solid #e5e7eb', cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', transition: 'transform 0.15s' }}
+                onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.04)'; }}
+                onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}
+              >
+                🖨️ Print for the fridge
+              </button>
+
+              {streak.longest >= 2 && (
+                <p style={{ marginTop: '1rem', color: '#9ca3af', fontSize: '0.85rem', fontWeight: 600 }}>
+                  🏆 Longest streak: {streak.longest} days
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
